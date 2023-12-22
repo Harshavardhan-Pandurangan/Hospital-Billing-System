@@ -11,13 +11,12 @@ CREATE TABLE Users (
 );
 
 CREATE Table Patients (
-    patient_id INT NOT NULL,
+    patient_id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     address VARCHAR(255) NOT NULL,
     phone VARCHAR(255) NOT NULL,
     gender VARCHAR(255) NOT NULL,
     age INT NOT NULL,
-    problem VARCHAR(300) NOT NULL,
     doe DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     PRIMARY KEY (patient_id),
@@ -29,6 +28,7 @@ CREATE Table Bills (
     user_id INT NOT NULL,
     patient_id INT NOT NULL,
     amount FLOAT NOT NULL DEFAULT 0,
+    problem VARCHAR(300) NOT NULL,
     doa DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     dod DATETIME DEFAULT NULL,
     PRIMARY KEY (bill_id),
