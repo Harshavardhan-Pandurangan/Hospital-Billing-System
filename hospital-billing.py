@@ -82,8 +82,6 @@ mydb = mysql.connector.connect(
 # 1 - login function
 def login():
     global mydb
-    global usrname
-    global passwrd
 
     usrname = login_usrname_entry.get()
     passwrd = login_passwrd_entry.get()
@@ -105,6 +103,48 @@ def login():
 
         LoginWindow.withdraw()
         MainMenuWindow.deiconify()
+
+# 2 - logout function
+def logout():
+    MainMenuWindow.withdraw()
+    LoginWindow.deiconify()
+
+    global user_id
+    user_id = 0
+
+# 3 - patient details create function
+def patient_details_create():
+    global mydb
+    global user_id
+
+    name = patient_details_create_name_entry.get()
+    address = patient_details_create_address_entry.get()
+    phone = patient_details_create_phone_entry.get()
+    gender = patient_details_create_gender_entry.get()
+    age = patient_details_create_age_entry.get()
+    problem = patient_details_create_problem_entry.get()
+
+    mycursor = mydb.cursor()
+    mycursor.execute('''INSERT INTO Patients(name, address, phone, gender, age, problem, user_id)
+        VALUES(%s, %s, %s, %s, %s, %s)''', (name, address, phone, gender, age, problem, user_id))
+    result = mycursor.fetchall()
+
+    PatientDetailsCreateWindow.withdraw()
+    MainMenuWindow.deiconify()
+
+    messagebox.showinfo("Success", "Patient Details Created Successfully")
+
+    patient_details_create_name_entry.delete(0, END)
+    patient_details_create_address_entry.delete(0, END)
+    patient_details_create_phone_entry.delete(0, END)
+    patient_details_create_gender_entry.delete(0, END)
+    patient_details_create_age_entry.delete(0, END)
+    patient_details_create_problem_entry.delete(0, END)
+
+# 4 - patient details update function
+def patient_details_update():
+    pass
+
 
 
 # Creating all the windows required
