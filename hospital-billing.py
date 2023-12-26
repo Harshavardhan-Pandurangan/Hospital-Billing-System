@@ -4,7 +4,7 @@ Hospital billing system using MySQL Connector and Database
 - Harshamithran P
 - Shreyas B
 
-3 databases used for users, patients details and billing details
+4 databases used for users, patients, bills and payments details
 UI built using Tkinter
 '''
 
@@ -14,58 +14,6 @@ from tkinter import *
 from tkinter import messagebox
 from datetime import datetime
 import time
-
-'''
-DROP DATABASE HospitalBilling;
-
-CREATE DATABASE HospitalBilling;
-USE HospitalBilling;
-
-CREATE TABLE Users (
-    usrname VARCHAR(255) NOT NULL UNIQUE,
-    passwrd VARCHAR(255) NOT NULL,
-    id INT NOT NULL AUTO_INCREMENT,
-    PRIMARY KEY (id)
-);
-
-CREATE Table Patients (
-    patient_id INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    address VARCHAR(255) NOT NULL,
-    phone VARCHAR(255) NOT NULL,
-    gender VARCHAR(255) NOT NULL,
-    age INT NOT NULL,
-    doe DATETIME DEFAULT CURRENT_TIMESTAMP,
-    user_id INT NOT NULL,
-    PRIMARY KEY (patient_id),
-    FOREIGN KEY (user_id) REFERENCES Users(id)
-);
-
-CREATE Table Bills (
-    bill_id INT NOT NULL AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    patient_id INT NOT NULL,
-    amount INT NOT NULL DEFAULT 0,
-    problem VARCHAR(300) NOT NULL,
-    doa DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    dod DATETIME DEFAULT NULL,
-    PRIMARY KEY (bill_id),
-    FOREIGN KEY (user_id) REFERENCES Users(id),
-    FOREIGN KEY (patient_id) REFERENCES Patients(patient_id)
-);
-
-CREATE Table Payments (
-    payment_id INT NOT NULL AUTO_INCREMENT,
-    bill_id INT NOT NULL,
-    amount INT NOT NULL,
-    dop DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (payment_id),
-    FOREIGN KEY (bill_id) REFERENCES Bills(bill_id)
-);
-
-INSERT INTO Users (usrname, passwrd) VALUES ('admin', 'admin');
-INSERT INTO Users (usrname, passwrd) VALUES ('user', 'user');
-'''
 
 
 # Making the connection to the database
@@ -120,6 +68,8 @@ def login():
 
 # 2 - logout function
 def logout():
+    print("Logout function called")
+
     MainMenuWindow.withdraw()
     LoginWindow.deiconify()
 
@@ -137,17 +87,17 @@ def patient_details_create():
     address = patient_details_create_address_entry.get('1.0', END)
     phone = patient_details_create_phone_entry.get('1.0', END)
     gender = patient_details_create_gender_entry.get('1.0', END)
-    age = patient_details_create_age_entry.get('1.0', END)
+    dob = patient_details_create_dob_entry.get('1.0', END)
 
     name = name[:-1]
     address = address[:-1]
     phone = phone[:-1]
     gender = gender[:-1]
-    age = age[:-1]
+    dob = dob[:-1]
 
     mycursor = mydb.cursor()
-    mycursor.execute('''INSERT INTO Patients(name, address, phone, gender, age, user_id)
-        VALUES(%s, %s, %s, %s, %s, %s);''', (name, address, phone, gender, age, user_id))
+    mycursor.execute('''INSERT INTO Patients(name, address, phone, gender, dob, user_id)
+        VALUES(%s, %s, %s, %s, %s, %s);''', (name, address, phone, gender, dob, user_id))
     result = mycursor.fetchall()
     mydb.commit()
 
@@ -160,7 +110,7 @@ def patient_details_create():
     patient_details_create_address_entry.delete('1.0', END)
     patient_details_create_phone_entry.delete('1.0', END)
     patient_details_create_gender_entry.delete('1.0', END)
-    patient_details_create_age_entry.delete('1.0', END)
+    patient_details_create_dob_entry.delete('1.0', END)
 
 # 4 - patient details retreive function
 def patient_details_retreive():
@@ -188,7 +138,7 @@ def patient_details_retreive():
         patient_details_update_address_entry.insert(END, result[0][2])
         patient_details_update_phone_entry.insert(END, result[0][3])
         patient_details_update_gender_entry.insert(END, result[0][4])
-        patient_details_update_age_entry.insert(END, result[0][5])
+        patient_details_update_dob_entry.insert(END, result[0][5])
 
 # 5 - patient details update function
 def patient_details_update():
@@ -202,17 +152,17 @@ def patient_details_update():
     address = patient_details_update_address_entry.get('1.0', END)
     phone = patient_details_update_phone_entry.get('1.0', END)
     gender = patient_details_update_gender_entry.get('1.0', END)
-    age = patient_details_update_age_entry.get('1.0', END)
+    dob = patient_details_update_dob_entry.get('1.0', END)
 
     name = name[:-1]
     address = address[:-1]
     phone = phone[:-1]
     gender = gender[:-1]
-    age = age[:-1]
+    dob = dob[:-1]
 
     mycursor = mydb.cursor()
-    sql = "UPDATE Patients SET name = %s, address = %s, phone = %s, gender = %s, age = %s, user_id = %s WHERE patient_id = %s;"
-    val = (name, address, phone, gender, age, user_id, patient_id)
+    sql = "UPDATE Patients SET name = %s, address = %s, phone = %s, gender = %s, dob = %s, user_id = %s WHERE patient_id = %s;"
+    val = (name, address, phone, gender, dob, user_id, patient_id)
     mycursor.execute(sql, val)
     mydb.commit()
 
@@ -237,210 +187,342 @@ def patient_details_view():
     if len(result) == 0:
         messagebox.showerror("Error", "Invalid Patient ID")
     else:
+        patient_details_view_name_entry.config(state=NORMAL)
+        patient_details_view_address_entry.config(state=NORMAL)
+        patient_details_view_phone_entry.config(state=NORMAL)
+        patient_details_view_gender_entry.config(state=NORMAL)
+        patient_details_view_dob_entry.config(state=NORMAL)
+
+        patient_details_view_name_entry.delete('1.0', END)
+        patient_details_view_address_entry.delete('1.0', END)
+        patient_details_view_phone_entry.delete('1.0', END)
+        patient_details_view_gender_entry.delete('1.0', END)
+        patient_details_view_dob_entry.delete('1.0', END)
+
         patient_details_view_name_entry.insert(END, result[0][1])
         patient_details_view_address_entry.insert(END, result[0][2])
         patient_details_view_phone_entry.insert(END, result[0][3])
         patient_details_view_gender_entry.insert(END, result[0][4])
-        patient_details_view_age_entry.insert(END, result[0][5])
+        patient_details_view_dob_entry.insert(END, result[0][5])
 
         patient_details_view_name_entry.config(state=DISABLED)
         patient_details_view_address_entry.config(state=DISABLED)
         patient_details_view_phone_entry.config(state=DISABLED)
         patient_details_view_gender_entry.config(state=DISABLED)
-        patient_details_view_age_entry.config(state=DISABLED)
+        patient_details_view_dob_entry.config(state=DISABLED)
 
-# 7 - billing details add function
-def billing_details_add():
-    print("Billing Details Add function called")
+# 7 - retrieve all patients function
+def retreive_all_patients():
+    print("Retreive All Patients function called")
 
     global mydb
     global user_id
 
-    patient_id = billing_details_add_patient_id_entry.get('1.0', END)
-    problem = billing_details_add_problem_entry.get('1.0', END)
+    mycursor = mydb.cursor()
+    mycursor.execute("SELECT * FROM Patients WHERE user_id = %s;", (user_id, ))
 
-    patient_id = patient_id[:-1]
+    result = mycursor.fetchall()
+
+    for i in range(len(result)):
+        result[i] = list(result[i])
+        result[i][1] = result[i][1][:24]
+        patient_details_all_entries_listbox.insert(END, f"{result[i][0]:<4} {result[i][1]:<25} {result[i][3]:<11}")
+
+# 8 - bills details view function
+def bills_details_view():
+    print("Bills Details View function called")
+
+    global mydb
+    global user_id
+
+    patient_id_entry = bills_details_view_id_entry.get('1.0', END)
+
+    patient_id_entry = patient_id_entry[:-1]
+
+    mycursor = mydb.cursor()
+    mycursor.execute("SELECT * FROM Patients WHERE patient_id = %s;", (patient_id_entry, ))
+
+    result = mycursor.fetchall()
+
+    if len(result) == 0:
+        messagebox.showerror("Error", "Invalid Patient ID")
+    else:
+        global patient_id
+        patient_id = result[0][0]
+
+        mycursor = mydb.cursor()
+        mycursor.execute("SELECT * FROM Bills WHERE patient_id = %s ORDER BY doa DESC;", (patient_id, ))
+
+        result = mycursor.fetchall()
+
+        bills_details_view_listbox.delete(0, END)
+
+        if len(result) == 0:
+            messagebox.showerror("Error", "No Bills Found")
+        else:
+            for i in range(len(result)):
+                result[i] = list(result[i])
+                result[i][4] = result[i][4][:20]
+                bills_details_view_listbox.insert(END, f"{result[i][0]:<4} {result[i][4]:<21} {result[i][3]:<11}")
+
+            bills_details_view_listbox.bind("<Double-1>", bill_payment_details_view)
+
+# 9 - bills details create function
+def bills_details_create():
+    print("Bills Details Create function called")
+
+    global mydb
+    global user_id
+    global patient_id
+
+    problem = bills_details_create_problem_entry.get('1.0', END)
+
     problem = problem[:-1]
 
     mycursor = mydb.cursor()
-    mycursor.execute("SELECT * FROM Patients WHERE patient_id = %s;", (patient_id, ))
+    mycursor.execute("SELECT * FROM Bills WHERE patient_id = %s AND dod IS NULL;", (patient_id, ))
+
     result = mycursor.fetchall()
 
-    print(result)
-
     if len(result) == 0:
-        messagebox.showerror("Error", "Invalid Patient ID")
-    else:
-        # check if there is a existing bill for the patient where dod is null, which means the patient has to complete the previous payment
-        mycursor.execute("SELECT * FROM Bills WHERE patient_id = %s AND dod IS NULL;", (patient_id, ))
+        mycursor = mydb.cursor()
+        mycursor.execute('''INSERT INTO Bills(user_id, patient_id, problem)
+            VALUES(%s, %s, %s);''', (user_id, patient_id, problem))
         result = mycursor.fetchall()
-
-        if len(result) == 0:
-            mycursor.execute('''INSERT INTO Bills(user_id, patient_id, problem)
-                VALUES(%s, %s, %s);''', (user_id, patient_id, problem))
-            mydb.commit()
-
-            messagebox.showinfo("Success", "Bill added successfully!")
-        else:
-            messagebox.showerror("Error", "Patient has to complete the payment for the previous bill")
-
-    billing_details_add_patient_id_entry.delete('1.0', END)
-    billing_details_add_problem_entry.delete('1.0', END)
-
-# 8 - billing details retreive function
-def billing_details_retreive():
-    # the most recent bill will be used to update. updating basically means to add or delete payments from the payment table
-    global mydb
-    global user_id
-
-    patient_id = billing_details_update_patient_id_entry.get('1.0', END)
-
-    mycursor = mydb.cursor()
-    mycursor.execute("SELECT * FROM Bills WHERE patient_id = %s ORDER BY bill_id DESC", (patient_id))
-    result = mycursor.fetchall()
-
-    if len(result) == 0:
-        messagebox.showerror("Error", "Invalid Patient ID")
-    else:
-        global bill_id
-        bill_id = result[0][0]
-
-        billing_details_update_problem_entry.insert(0, result[0][4])
-
-        mycursor.execute("SELECT * FROM Payments WHERE bill_id = %s ORDER BY payment_id", (bill_id))
-        result = mycursor.fetchall()
-
-        for i in range(len(result)):
-            billing_details_update_payments_listbox.insert(i, result[i][2])
-
-        billing_details_update_payments_listbox.insert(END, "Total: " + str(result[0][2]))
-
-        billing_details_update_payments_entry.delete('1.0', END)
-
-# 9 - billing details add payment function
-def billing_details_add_payment():
-    global mydb
-    global user_id
-    global bill_id
-
-    amount = billing_details_update_payments_entry.get('1.0', END)
-
-    mycursor = mydb.cursor()
-    mycursor.execute("SELECT * FROM Bills WHERE bill_id = %s", (bill_id))
-    result = mycursor.fetchall()
-
-    if len(result) == 0:
-        messagebox.showerror("Error", "Invalid Bill ID")
-    else:
-        mycursor.execute('''INSERT INTO Payments(bill_id, amount)
-            VALUES(%s, %s)''', (bill_id, amount))
         mydb.commit()
 
-        messagebox.showinfo("Success", "Payment added successfully!")
+        BillsDetailsCreateWindow.withdraw()
+        BillsDetailsViewWindow.deiconify()
 
-        billing_details_update_payments_listbox.delete('1.0', END)
+        messagebox.showinfo("Success", "Bill Created Successfully")
 
-        mycursor.execute("SELECT * FROM Payments WHERE bill_id = %s ORDER BY payment_id", (bill_id))
-        result = mycursor.fetchall()
+        bills_details_create_problem_entry.delete('1.0', END)
+    else:
+        messagebox.showerror("Error", "Patient already has an active bill")
 
-        for i in range(len(result)):
-            billing_details_update_payments_listbox.insert(i, result[i][2])
+# 10 - bill payment details view function
+def bill_payment_details_view(event):
+    print("Bill Payment Details View function called")
 
-        billing_details_update_payments_listbox.insert(END, "Total: " + str(result[0][2]))
-
-        billing_details_update_payments_entry.delete('1.0', END)
-
-# 10 - billing details delete payment function
-def billing_details_delete_payment():
     global mydb
     global user_id
+    global patient_id
     global bill_id
 
-    amount = billing_details_update_payments_entry.get('1.0', END)
+    BillsDetailsViewWindow.withdraw()
+    BillsDetailsUpdateWindow.deiconify()
+
+    selection = bills_details_view_listbox.curselection()
+    value = bills_details_view_listbox.get(selection[0])
+
+    bill_id_clicked = int(value.split(" ")[0])
+    bill_id = bill_id_clicked
 
     mycursor = mydb.cursor()
-    mycursor.execute("SELECT * FROM Bills WHERE bill_id = %s", (bill_id))
+    mycursor.execute("SELECT * FROM Bills WHERE bill_id = %s;", (bill_id_clicked, ))
+
+    result = mycursor.fetchall()
+
+    bills_details_update_problem_entry.config(state=NORMAL)
+    bills_details_update_amount_entry.config(state=NORMAL)
+    bills_details_update_doa_entry.config(state=NORMAL)
+
+    bills_details_update_problem_entry.delete('1.0', END)
+    bills_details_update_amount_entry.delete('1.0', END)
+    bills_details_update_doa_entry.delete('1.0', END)
+    bills_details_update_payments_listbox.delete(0, END)
+    bills_details_update_payments_listbox.unbind("<Double-1>")
+    bills_details_update_add_new_payment_amount_entry.delete('1.0', END)
+
+    bills_details_update_problem_entry.insert(END, result[0][4])
+    bills_details_update_amount_entry.insert(END, result[0][3])
+    bills_details_update_doa_entry.insert(END, result[0][5])
+
+    if result[0][6] != None:
+        bills_details_update_problem_entry.config(state=DISABLED)
+        bills_details_update_add_new_payment_amount_entry.config(state=DISABLED)
+        bills_details_update_button.config(state=DISABLED)
+        bills_details_update_add_new_payment_button.config(state=DISABLED)
+        bills_details_update_complete_bill_button.config(state=DISABLED)
+    else:
+        bills_details_update_problem_entry.config(state=NORMAL)
+        bills_details_update_add_new_payment_amount_entry.config(state=NORMAL)
+        bills_details_update_button.config(state=NORMAL)
+        bills_details_update_add_new_payment_button.config(state=NORMAL)
+        bills_details_update_complete_bill_button.config(state=NORMAL)
+
+    bills_details_update_amount_entry.config(state=DISABLED)
+    bills_details_update_doa_entry.config(state=DISABLED)
+
+    mycursor = mydb.cursor()
+    mycursor.execute("SELECT * FROM Payments WHERE bill_id = %s ORDER BY dop DESC;", (bill_id_clicked, ))
+
+    result = mycursor.fetchall()
+
+    for i in range(len(result)):
+        result[i] = list(result[i])
+        result[i][3] = str(result[i][3])[:20]
+        bills_details_update_payments_listbox.insert(END, f"{result[i][0]:<4} {result[i][3]:<21} {result[i][2]:<11}")
+
+# 11 - bill_details_update_add_new_payment function
+def bill_details_update_add_new_payment():
+    print("Bill Details Update Add New Payment function called")
+
+    global mydb
+    global user_id
+    global patient_id
+    global bill_id
+
+    amount = bills_details_update_add_new_payment_amount_entry.get('1.0', END)
+
+    amount = amount[:-1]
+
+    mycursor = mydb.cursor()
+    mycursor.execute("SELECT * FROM Bills WHERE bill_id = %s;", (bill_id, ))
+
     result = mycursor.fetchall()
 
     if len(result) == 0:
         messagebox.showerror("Error", "Invalid Bill ID")
     else:
-        mycursor.execute("SELECT * FROM Payments WHERE bill_id = %s ORDER BY payment_id", (bill_id))
+        mycursor = mydb.cursor()
+        mycursor.execute("INSERT INTO Payments(bill_id, amount) VALUES(%s, %s);", (bill_id, amount))
         result = mycursor.fetchall()
-
-        if len(result) == 0:
-            messagebox.showerror("Error", "No payments to delete")
-        else:
-            mycursor.execute("DELETE FROM Payments WHERE payment_id = %s", (result[0][0]))
-            mydb.commit()
-
-            messagebox.showinfo("Success", "Payment deleted successfully!")
-
-            billing_details_update_payments_listbox.delete('1.0', END)
-
-            mycursor.execute("SELECT * FROM Payments WHERE bill_id = %s ORDER BY payment_id", (bill_id))
-            result = mycursor.fetchall()
-
-            for i in range(len(result)):
-                billing_details_update_payments_listbox.insert(i, result[i][2])
-
-            billing_details_update_payments_listbox.insert(END, "Total: " + str(result[0][2]))
-
-            billing_details_update_payments_entry.delete('1.0', END)
-
-# 11 - billing details update function
-def billing_details_update():
-    global mydb
-    global user_id
-    global bill_id
-
-    problem = billing_details_update_problem_entry.get('1.0', END)
-
-    mycursor = mydb.cursor()
-    mycursor.execute("SELECT * FROM Bills WHERE bill_id = %s", (bill_id))
-    result = mycursor.fetchall()
-
-    if len(result) == 0:
-        messagebox.showerror("Error", "Invalid Bill ID")
-    else:
-        mycursor.execute("UPDATE Bills SET problem = %s WHERE bill_id = %s", (problem, bill_id))
         mydb.commit()
 
-        messagebox.showinfo("Success", "Bill updated successfully!")
+        messagebox.showinfo("Success", "Payment Added Successfully")
 
-        billing_details_update_problem_entry.delete('1.0', END)
+        bills_details_update_add_new_payment_amount_entry.delete('1.0', END)
 
-# 12 - billing details retreive function
-def billing_details_view():
-    global mydb
-    global user_id
+        bills_details_update_payments_listbox.delete(0, END)
 
-    patient_id = billing_details_view_patient_id_entry.get('1.0', END)
+        mycursor = mydb.cursor()
+        mycursor.execute("SELECT * FROM Payments WHERE bill_id = %s ORDER BY dop DESC;", (bill_id, ))
 
-    mycursor = mydb.cursor()
-    mycursor.execute("SELECT * FROM Bills WHERE patient_id = %s ORDER BY bill_id DESC", (patient_id))
-    result = mycursor.fetchall()
-
-    if len(result) == 0:
-        messagebox.showerror("Error", "Invalid Patient ID")
-    else:
-        global bill_id
-        bill_id = result[0][0]
-
-        billing_details_view_problem_entry.insert(0, result[0][4])
-
-        mycursor.execute("SELECT * FROM Payments WHERE bill_id = %s ORDER BY payment_id", (bill_id))
         result = mycursor.fetchall()
 
         for i in range(len(result)):
-            billing_details_view_payments_listbox.insert(i, result[i][2])
+            result[i] = list(result[i])
+            result[i][3] = str(result[i][3])[:20]
+            bills_details_update_payments_listbox.insert(END, f"{result[i][0]:<4} {result[i][3]:<21} {result[i][2]:<11}")
 
-        billing_details_view_payments_listbox.insert(END, "Total: " + str(result[0][2]))
+# 12 - update bill details function
+def bill_details_update():
+    print("Update Bill Details function called")
 
-        billing_details_view_payments_entry.delete('1.0', END)
+    global mydb
+    global user_id
+    global patient_id
+    global bill_id
+
+    problem = bills_details_update_problem_entry.get('1.0', END)
+
+    problem = problem[:-1]
+
+    mycursor = mydb.cursor()
+    sql = "UPDATE Bills SET problem = %s WHERE bill_id = %s;"
+    val = (problem, bill_id)
+    mycursor.execute(sql, val)
+    mydb.commit()
+
+    messagebox.showinfo("Success", "Bill details updated successfully!")
+
+# 13 - complete bill function
+def complete_bill():
+    print("Complete Bill function called")
+
+    global mydb
+    global user_id
+    global patient_id
+    global bill_id
+
+    # set the total amount and the date of discharge
+    mycursor = mydb.cursor()
+    mycursor.execute("SELECT * FROM Payments WHERE bill_id = %s;", (bill_id, ))
+
+    result = mycursor.fetchall()
+
+    total_amount = 0
+    for i in range(len(result)):
+        total_amount += result[i][2]
+
+    mycursor = mydb.cursor()
+    mycursor.execute("UPDATE Bills SET amount = %s, dod = %s WHERE bill_id = %s;", (total_amount, datetime.now(), bill_id))
+    mydb.commit()
+
+    messagebox.showinfo("Success", "Bill Completed Successfully")
+
+    BillsDetailsUpdateWindow.withdraw()
+    BillsDetailsViewWindow.deiconify()
 
 
-# Creating all the windows required
+# Additional functions for the UI
+
+def main_to_add_new_patient():
+    print("Main to Add New Patient function called")
+
+    MainMenuWindow.withdraw()
+    PatientDetailsCreateWindow.deiconify()
+
+    patient_details_create_name_entry.delete('1.0', END)
+    patient_details_create_address_entry.delete('1.0', END)
+    patient_details_create_phone_entry.delete('1.0', END)
+    patient_details_create_gender_entry.delete('1.0', END)
+    patient_details_create_dob_entry.delete('1.0', END)
+
+def main_to_update_patient_details():
+    print("Main to Update Patient Details function called")
+
+    MainMenuWindow.withdraw()
+    PatientDetailsUpdateWindow.deiconify()
+
+    patient_details_update_id_entry.delete('1.0', END)
+    patient_details_update_name_entry.delete('1.0', END)
+    patient_details_update_address_entry.delete('1.0', END)
+    patient_details_update_phone_entry.delete('1.0', END)
+    patient_details_update_gender_entry.delete('1.0', END)
+    patient_details_update_dob_entry.delete('1.0', END)
+
+def main_to_view_patient_details():
+    print("Main to View Patient Details function called")
+
+    MainMenuWindow.withdraw()
+    PatientDetailsViewWindow.deiconify()
+
+    patient_details_view_id_entry.delete('1.0', END)
+    patient_details_view_name_entry.delete('1.0', END)
+    patient_details_view_address_entry.delete('1.0', END)
+    patient_details_view_phone_entry.delete('1.0', END)
+    patient_details_view_gender_entry.delete('1.0', END)
+    patient_details_view_dob_entry.delete('1.0', END)
+
+def main_to_view_all_patient_details():
+    print("Main to View All Patient Details function called")
+
+    MainMenuWindow.withdraw()
+    PatientsDetailsAllEntriesWindow.deiconify()
+
+    patient_details_all_entries_listbox.delete(0, END)
+
+    retreive_all_patients()
+
+def main_to_view_bills_details():
+    print("Main to View Bills Details function called")
+
+    MainMenuWindow.withdraw()
+    BillsDetailsViewWindow.deiconify()
+
+    bills_details_view_id_entry.delete('1.0', END)
+    bills_details_view_listbox.delete(0, END)
+
+def bills_details_view_to_bills_details_create():
+    print("Bills Details View to Bills Details Create function called")
+
+    BillsDetailsViewWindow.withdraw()
+    BillsDetailsCreateWindow.deiconify()
+
+    bills_details_create_problem_entry.delete('1.0', END)
+
 
 def exit():
     print("Exit function called")
@@ -450,10 +532,13 @@ def exit():
     PatientDetailsCreateWindow.destroy()
     PatientDetailsUpdateWindow.destroy()
     PatientDetailsViewWindow.destroy()
-    BillingDetailsAddWindow.destroy()
-    BillingDetailsUpdateWindow.destroy()
-    BillingDetailsViewWindow.destroy()
+    PatientsDetailsAllEntriesWindow.destroy()
+    BillsDetailsViewWindow.destroy()
+    BillsDetailsCreateWindow.destroy()
+    BillsDetailsUpdateWindow.destroy()
 
+
+# Creating all the windows required
 
 root = Tk()
 screen_width = root.winfo_screenwidth()
@@ -506,68 +591,86 @@ PatientDetailsViewWindow.configure(bg="white")
 PatientDetailsViewWindow.withdraw()
 PatientDetailsViewWindow.protocol("WM_DELETE_WINDOW", exit)
 
-# 6 - Billing Details Update Window
-BillingDetailsUpdateWindow = Tk()
-BillingDetailsUpdateWindow.title("Billing Details Update")
-BillingDetailsUpdateWindow.geometry(f"500x500+{x_position}+{y_position}")
-BillingDetailsUpdateWindow.resizable(0, 0)
-BillingDetailsUpdateWindow.configure(bg="white")
-BillingDetailsUpdateWindow.withdraw()
-BillingDetailsUpdateWindow.protocol("WM_DELETE_WINDOW", exit)
+# 6 - Patients Details All Entries Window
+PatientsDetailsAllEntriesWindow = Tk()
+PatientsDetailsAllEntriesWindow.title("Patients Details All Entries")
+PatientsDetailsAllEntriesWindow.geometry(f"500x500+{x_position}+{y_position}")
+PatientsDetailsAllEntriesWindow.resizable(0, 0)
+PatientsDetailsAllEntriesWindow.configure(bg="white")
+PatientsDetailsAllEntriesWindow.withdraw()
+PatientsDetailsAllEntriesWindow.protocol("WM_DELETE_WINDOW", exit)
 
-# 7 - Billing Details View Window
-BillingDetailsViewWindow = Tk()
-BillingDetailsViewWindow.title("Billing Details View")
-BillingDetailsViewWindow.geometry(f"500x500+{x_position}+{y_position}")
-BillingDetailsViewWindow.resizable(0, 0)
-BillingDetailsViewWindow.configure(bg="white")
-BillingDetailsViewWindow.withdraw()
-BillingDetailsViewWindow.protocol("WM_DELETE_WINDOW", exit)
+# 7 - Bills Details View Window
+BillsDetailsViewWindow = Tk()
+BillsDetailsViewWindow.title("Bills Details View")
+BillsDetailsViewWindow.geometry(f"500x500+{x_position}+{y_position}")
+BillsDetailsViewWindow.resizable(0, 0)
+BillsDetailsViewWindow.configure(bg="white")
+BillsDetailsViewWindow.withdraw()
+BillsDetailsViewWindow.protocol("WM_DELETE_WINDOW", exit)
+
+# 8 - Bills Details Create Window
+BillsDetailsCreateWindow = Tk()
+BillsDetailsCreateWindow.title("Bills Details Create")
+BillsDetailsCreateWindow.geometry(f"500x500+{x_position}+{y_position}")
+BillsDetailsCreateWindow.resizable(0, 0)
+BillsDetailsCreateWindow.configure(bg="white")
+BillsDetailsCreateWindow.withdraw()
+BillsDetailsCreateWindow.protocol("WM_DELETE_WINDOW", exit)
+
+# 9 - Bills Details Update Window
+BillsDetailsUpdateWindow = Tk()
+BillsDetailsUpdateWindow.title("Bills Details Update")
+BillsDetailsUpdateWindow.geometry(f"500x500+{x_position}+{y_position}")
+BillsDetailsUpdateWindow.resizable(0, 0)
+BillsDetailsUpdateWindow.configure(bg="white")
+BillsDetailsUpdateWindow.withdraw()
+BillsDetailsUpdateWindow.protocol("WM_DELETE_WINDOW", exit)
 
 
 # Adding all elements to all the windows
 
 # 1 - Login Window
+login_label = Label(LoginWindow, text="Login", font=("Arial", 20), bg="white")
+login_label.place(x=220, y=50)
+
 login_usrname_label = Label(LoginWindow, text="Username", font=("Arial", 20), bg="white")
-login_usrname_label.place(x=50, y=100)
+login_usrname_label.place(x=50, y=150)
 
 login_usrname_entry = Text(LoginWindow, height=1, width=20, font=("Arial", 20))
-login_usrname_entry.place(x=200, y=100)
+login_usrname_entry.place(x=200, y=150)
 
 login_passwrd_label = Label(LoginWindow, text="Password", font=("Arial", 20), bg="white")
-login_passwrd_label.place(x=50, y=200)
+login_passwrd_label.place(x=50, y=230)
 
 login_passwrd_entry = Text(LoginWindow, height=1, width=20, font=("Arial", 20))
-login_passwrd_entry.place(x=200, y=200)
+login_passwrd_entry.place(x=200, y=230)
 
 login_button = Button(LoginWindow, text="Login", font=("Arial", 20), bg="white", command=lambda: login())
-login_button.place(x=200, y=320)
+login_button.place(x=213, y=330)
 
 login_exit_button = Button(LoginWindow, text="Exit", font=("Arial", 20), bg="white", command=lambda: exit())
-login_exit_button.place(x=205, y=380)
+login_exit_button.place(x=220, y=390)
 
 
 # 2 - Main Menu Window
 main_menu_label = Label(MainMenuWindow, text="Main Menu", font=("Arial", 20), bg="white")
 main_menu_label.place(x=200, y=50)
 
-main_menu_patient_details_create_button = Button(MainMenuWindow, text="Add New Patient", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: [MainMenuWindow.withdraw(), PatientDetailsCreateWindow.deiconify()])
+main_menu_patient_details_create_button = Button(MainMenuWindow, text="Add New Patient", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: main_to_add_new_patient())
 main_menu_patient_details_create_button.place(x=110, y=100)
 
-main_menu_patient_details_update_button = Button(MainMenuWindow, text="Update Patient Details", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: [MainMenuWindow.withdraw(), PatientDetailsUpdateWindow.deiconify()])
+main_menu_patient_details_update_button = Button(MainMenuWindow, text="Update Patient Details", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: main_to_update_patient_details())
 main_menu_patient_details_update_button.place(x=110, y=150)
 
-main_menu_patient_details_view_button = Button(MainMenuWindow, text="View Patient Details", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: [MainMenuWindow.withdraw(), PatientDetailsViewWindow.deiconify()])
+main_menu_patient_details_view_button = Button(MainMenuWindow, text="View Patient Details", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: main_to_view_patient_details())
 main_menu_patient_details_view_button.place(x=110, y=200)
 
-main_menu_billing_details_add_button = Button(MainMenuWindow, text="Create New Bill", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: [MainMenuWindow.withdraw(), BillingDetailsAddWindow.deiconify()])
-main_menu_billing_details_add_button.place(x=110, y=250)
+main_menu_patient_details_all_entries_button = Button(MainMenuWindow, text="View All Patient Details", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: main_to_view_all_patient_details())
+main_menu_patient_details_all_entries_button.place(x=110, y=250)
 
-main_menu_billing_details_update_button = Button(MainMenuWindow, text="Update Bill Details", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: [MainMenuWindow.withdraw(), BillingDetailsUpdateWindow.deiconify()])
-main_menu_billing_details_update_button.place(x=110, y=300)
-
-main_menu_billing_details_view_button = Button(MainMenuWindow, text="View Bill Details", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: [MainMenuWindow.withdraw(), BillingDetailsViewWindow.deiconify()])
-main_menu_billing_details_view_button.place(x=110, y=350)
+main_menu_bills_details_view_button = Button(MainMenuWindow, text="View Bills Details", font=("Arial", 20), bg="white", height=1, width=20, command=lambda: main_to_view_bills_details())
+main_menu_bills_details_view_button.place(x=110, y=300)
 
 main_menu_logout_button = Button(MainMenuWindow, text="Logout", font=("Arial", 20), bg="white", command=lambda: logout())
 main_menu_logout_button.place(x=200, y=420)
@@ -601,11 +704,11 @@ patient_details_create_gender_label.place(x=50, y=250)
 patient_details_create_gender_entry = Text(PatientDetailsCreateWindow, font=("Arial", 20), height=1, width=20)
 patient_details_create_gender_entry.place(x=200, y=250)
 
-patient_details_create_age_label = Label(PatientDetailsCreateWindow, text="Age", font=("Arial", 20), bg="white")
-patient_details_create_age_label.place(x=50, y=300)
+patient_details_create_dob_label = Label(PatientDetailsCreateWindow, text="DOB", font=("Arial", 20), bg="white")
+patient_details_create_dob_label.place(x=50, y=300)
 
-patient_details_create_age_entry = Text(PatientDetailsCreateWindow, font=("Arial", 20), height=1, width=20)
-patient_details_create_age_entry.place(x=200, y=300)
+patient_details_create_dob_entry = Text(PatientDetailsCreateWindow, font=("Arial", 20), height=1, width=20)
+patient_details_create_dob_entry.place(x=200, y=300)
 
 patient_details_create_button = Button(PatientDetailsCreateWindow, text="Create", font=("Arial", 20), bg="white", command=lambda: patient_details_create())
 patient_details_create_button.place(x=200, y=400)
@@ -651,11 +754,11 @@ patient_details_update_gender_label.place(x=50, y=350)
 patient_details_update_gender_entry = Text(PatientDetailsUpdateWindow, font=("Arial", 20), height=1, width=20)
 patient_details_update_gender_entry.place(x=200, y=350)
 
-patient_details_update_age_label = Label(PatientDetailsUpdateWindow, text="Age", font=("Arial", 20), bg="white")
-patient_details_update_age_label.place(x=50, y=400)
+patient_details_update_dob_label = Label(PatientDetailsUpdateWindow, text="DOB", font=("Arial", 20), bg="white")
+patient_details_update_dob_label.place(x=50, y=400)
 
-patient_details_update_age_entry = Text(PatientDetailsUpdateWindow, font=("Arial", 20), height=1, width=20)
-patient_details_update_age_entry.place(x=200, y=400)
+patient_details_update_dob_entry = Text(PatientDetailsUpdateWindow, font=("Arial", 20), height=1, width=20)
+patient_details_update_dob_entry.place(x=200, y=400)
 
 patient_details_update_button = Button(PatientDetailsUpdateWindow, text="Update", font=("Arial", 20), bg="white", command=lambda: patient_details_update())
 patient_details_update_button.place(x=120, y=450)
@@ -680,47 +783,157 @@ patient_details_view_button.place(x=200, y=150)
 patient_details_view_name_label = Label(PatientDetailsViewWindow, text="Name", font=("Arial", 20), bg="white")
 patient_details_view_name_label.place(x=50, y=200)
 
-patient_details_view_name_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20)
+patient_details_view_name_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
 patient_details_view_name_entry.place(x=200, y=200)
 
 patient_details_view_address_label = Label(PatientDetailsViewWindow, text="Address", font=("Arial", 20), bg="white")
 patient_details_view_address_label.place(x=50, y=250)
 
-patient_details_view_address_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20)
+patient_details_view_address_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
 patient_details_view_address_entry.place(x=200, y=250)
 
 patient_details_view_phone_label = Label(PatientDetailsViewWindow, text="Phone", font=("Arial", 20), bg="white")
 patient_details_view_phone_label.place(x=50, y=300)
 
-patient_details_view_phone_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20)
+patient_details_view_phone_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
 patient_details_view_phone_entry.place(x=200, y=300)
 
 patient_details_view_gender_label = Label(PatientDetailsViewWindow, text="Gender", font=("Arial", 20), bg="white")
 patient_details_view_gender_label.place(x=50, y=350)
 
-patient_details_view_gender_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20)
+patient_details_view_gender_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
 patient_details_view_gender_entry.place(x=200, y=350)
 
-patient_details_view_age_label = Label(PatientDetailsViewWindow, text="Age", font=("Arial", 20), bg="white")
-patient_details_view_age_label.place(x=50, y=400)
+patient_details_view_dob_label = Label(PatientDetailsViewWindow, text="DOB", font=("Arial", 20), bg="white")
+patient_details_view_dob_label.place(x=50, y=400)
 
-patient_details_view_age_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20)
-patient_details_view_age_entry.place(x=200, y=400)
+patient_details_view_dob_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
+patient_details_view_dob_entry.place(x=200, y=400)
 
 patient_details_view_exit_button = Button(PatientDetailsViewWindow, text="Back", font=("Arial", 20), bg="white", command=lambda: [PatientDetailsViewWindow.withdraw(), MainMenuWindow.deiconify()])
 patient_details_view_exit_button.place(x=210, y=450)
 
 
-# 6 - Billing Details View Window
-billing_details_view_label = Label(BillingDetailsViewWindow, text="View Bill Details", font=("Arial", 20), bg="white")
-billing_details_view_label.place(x=177, y=50)
+# 6 - Patient Details All Entries Window
+patient_details_all_entries_label = Label(PatientsDetailsAllEntriesWindow, text="All Patient Details", font=("Arial", 20), bg="white")
+patient_details_all_entries_label.place(x=166, y=50)
 
-billing_details_view_patient_id_label = Label(BillingDetailsViewWindow, text="Patient ID", font=("Arial", 20), bg="white")
-billing_details_view_patient_id_label.place(x=50, y=120)
+patient_details_all_entries_canvas = Canvas(PatientsDetailsAllEntriesWindow, width=50, height=21, bg="white")
+patient_details_all_entries_canvas.place(x=50, y=100)
+
+patient_details_all_entries_scrollbar = Scrollbar(PatientsDetailsAllEntriesWindow, orient="vertical", command=patient_details_all_entries_canvas.yview)
+patient_details_all_entries_scrollbar.place(x=450, y=100)
+
+patient_details_all_entries_listbox = Listbox(PatientsDetailsAllEntriesWindow, yscrollcommand=patient_details_all_entries_scrollbar.set, font=("Courier", 14), width=50, height=21)
+patient_details_all_entries_listbox.place(x=50, y=100)
+
+patient_details_all_entries_canvas.configure(yscrollcommand=patient_details_all_entries_scrollbar.set, scrollregion=patient_details_all_entries_canvas.bbox("all"))
+
+patient_details_all_entries_exit_button = Button(PatientsDetailsAllEntriesWindow, text="Back", font=("Arial", 20), bg="white", command=lambda: [PatientsDetailsAllEntriesWindow.withdraw(), MainMenuWindow.deiconify()])
+patient_details_all_entries_exit_button.place(x=210, y=450)
 
 
-# 7 - Billing Details Update Window
+# 7 - Bills Details View Window
+bills_details_view_label = Label(BillsDetailsViewWindow, text="View Bills Details", font=("Arial", 20), bg="white")
+bills_details_view_label.place(x=156, y=50)
 
+bills_details_view_id_label = Label(BillsDetailsViewWindow, text="Patient ID", font=("Arial", 20), bg="white")
+bills_details_view_id_label.place(x=50, y=100)
+
+bills_details_view_id_entry = Text(BillsDetailsViewWindow, font=("Arial", 20), height=1, width=20)
+bills_details_view_id_entry.place(x=200, y=100)
+
+bills_details_view_button = Button(BillsDetailsViewWindow, text="View", font=("Arial", 20), bg="white", command=lambda: bills_details_view())
+bills_details_view_button.place(x=200, y=150)
+
+bills_details_view_canvas = Canvas(BillsDetailsViewWindow, width=50, height=15, bg="white")
+bills_details_view_canvas.place(x=50, y=200)
+
+bills_details_view_scrollbar = Scrollbar(BillsDetailsViewWindow, orient="vertical", command=bills_details_view_canvas.yview)
+bills_details_view_scrollbar.place(x=450, y=200)
+
+bills_details_view_listbox = Listbox(BillsDetailsViewWindow, yscrollcommand=bills_details_view_scrollbar.set, font=("Courier", 14), width=50, height=15)
+bills_details_view_listbox.place(x=50, y=200)
+
+bills_details_view_canvas.configure(yscrollcommand=bills_details_view_scrollbar.set, scrollregion=bills_details_view_canvas.bbox("all"))
+
+bills_details_view_add_new_bill_button = Button(BillsDetailsViewWindow, text="Add New Bill", font=("Arial", 20), bg="white", command=lambda: bills_details_view_to_bills_details_create())
+bills_details_view_add_new_bill_button.place(x=50, y=450)
+
+bills_details_view_exit_button = Button(BillsDetailsViewWindow, text="Back", font=("Arial", 20), bg="white", command=lambda: [BillsDetailsViewWindow.withdraw(), MainMenuWindow.deiconify()])
+bills_details_view_exit_button.place(x=350, y=450)
+
+
+# 8 - Bills Details Create Window
+bills_details_create_label = Label(BillsDetailsCreateWindow, text="Create New Bill", font=("Arial", 20), bg="white")
+bills_details_create_label.place(x=156, y=50)
+
+bills_details_create_problem_label = Label(BillsDetailsCreateWindow, text="Problem", font=("Arial", 20), bg="white")
+bills_details_create_problem_label.place(x=50, y=185)
+
+bills_details_create_problem_entry = Text(BillsDetailsCreateWindow, font=("Arial", 20), height=1, width=20)
+bills_details_create_problem_entry.place(x=200, y=185)
+
+bills_details_create_button = Button(BillsDetailsCreateWindow, text="Create", font=("Arial", 20), bg="white", command=lambda: bills_details_create())
+bills_details_create_button.place(x=200, y=320)
+
+bill_details_create_exit_button = Button(BillsDetailsCreateWindow, text="Back", font=("Arial", 20), bg="white", command=lambda: [BillsDetailsCreateWindow.withdraw(), BillsDetailsViewWindow.deiconify()])
+bill_details_create_exit_button.place(x=210, y=400)
+
+
+# 9 - Bills Details Update Window
+bills_details_update_label = Label(BillsDetailsUpdateWindow, text="Update Bill Details", font=("Arial", 20), bg="white")
+bills_details_update_label.place(x=165, y=20)
+
+bills_details_update_problem_label = Label(BillsDetailsUpdateWindow, text="Problem", font=("Arial", 13), bg="white")
+bills_details_update_problem_label.place(x=50, y=70)
+
+bills_details_update_problem_entry = Text(BillsDetailsUpdateWindow, font=("Arial", 13), height=1, width=20)
+bills_details_update_problem_entry.place(x=200, y=70)
+
+bills_details_update_doa_label = Label(BillsDetailsUpdateWindow, text="DOA", font=("Arial", 13), bg="white")
+bills_details_update_doa_label.place(x=50, y=105)
+
+bills_details_update_doa_entry = Text(BillsDetailsUpdateWindow, font=("Arial", 13), height=1, width=20)
+bills_details_update_doa_entry.place(x=200, y=105)
+
+bills_details_update_amount_label = Label(BillsDetailsUpdateWindow, text="Total Amount", font=("Arial", 13), bg="white")
+bills_details_update_amount_label.place(x=50, y=140)
+
+bills_details_update_amount_entry = Text(BillsDetailsUpdateWindow, font=("Arial", 13), height=1, width=20)
+bills_details_update_amount_entry.place(x=200, y=140)
+
+bills_details_update_payments_canvas = Canvas(BillsDetailsUpdateWindow, width=50, height=12, bg="white")
+bills_details_update_payments_canvas.place(x=50, y=175)
+
+bills_details_update_payments_scrollbar = Scrollbar(BillsDetailsUpdateWindow, orient="vertical", command=bills_details_update_payments_canvas.yview)
+bills_details_update_payments_scrollbar.place(x=450, y=175)
+
+bills_details_update_payments_listbox = Listbox(BillsDetailsUpdateWindow, yscrollcommand=bills_details_update_payments_scrollbar.set, font=("Courier", 13), width=50, height=12)
+bills_details_update_payments_listbox.place(x=50, y=175)
+
+bills_details_update_payments_canvas.configure(yscrollcommand=bills_details_update_payments_scrollbar.set, scrollregion=bills_details_update_payments_canvas.bbox("all"))
+
+bills_details_update_add_new_payment_label = Label(BillsDetailsUpdateWindow, text="Add New Payment", font=("Arial", 17), bg="white")
+bills_details_update_add_new_payment_label.place(x=50, y=350)
+
+bills_details_update_add_new_payment_amount_label = Label(BillsDetailsUpdateWindow, text="Amount", font=("Arial", 13), bg="white")
+bills_details_update_add_new_payment_amount_label.place(x=50, y=400)
+
+bills_details_update_add_new_payment_amount_entry = Text(BillsDetailsUpdateWindow, font=("Arial", 13), height=1, width=20)
+bills_details_update_add_new_payment_amount_entry.place(x=170, y=400)
+
+bill_details_update_add_new_payment_button = Button(BillsDetailsUpdateWindow, text="Add", font=("Arial", 13), bg="white", command=lambda: bill_details_update_add_new_payment())
+bill_details_update_add_new_payment_button.place(x=400, y=400)
+
+bills_details_update_update_button = Button(BillsDetailsUpdateWindow, text="Update", font=("Arial", 20), bg="white", command=lambda: bill_details_update())
+bills_details_update_update_button.place(x=20, y=450)
+
+bills_details_update_complete_payment_button = Button(BillsDetailsUpdateWindow, text="Complete Payment", font=("Arial", 20), bg="white", command=lambda: complete_bill())
+bills_details_update_complete_payment_button.place(x=155, y=450)
+
+bills_details_update_exit_button = Button(BillsDetailsUpdateWindow, text="Back", font=("Arial", 20), bg="white", command=lambda: [BillsDetailsUpdateWindow.withdraw(), BillsDetailsViewWindow.deiconify()])
+bills_details_update_exit_button.place(x=395, y=450)
 
 
 # Mainloops for all the windows
@@ -730,9 +943,10 @@ MainMenuWindow.mainloop()
 PatientDetailsCreateWindow.mainloop()
 PatientDetailsUpdateWindow.mainloop()
 PatientDetailsViewWindow.mainloop()
-BillingDetailsAddWindow.mainloop()
-BillingDetailsViewWindow.mainloop()
-BillingDetailsUpdateWindow.mainloop()
+PatientsDetailsAllEntriesWindow.mainloop()
+BillsDetailsViewWindow.mainloop()
+BillsDetailsCreateWindow.mainloop()
+BillsDetailsUpdateWindow.mainloop()
 
 
 # End of the program

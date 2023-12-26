@@ -16,7 +16,7 @@ CREATE Table Patients (
     address VARCHAR(255) NOT NULL,
     phone VARCHAR(255) NOT NULL,
     gender VARCHAR(255) NOT NULL,
-    age INT NOT NULL,
+    dob VARCHAR(20) NOT NULL,
     doe DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     PRIMARY KEY (patient_id),
@@ -39,7 +39,6 @@ CREATE Table Bills (
 CREATE Table Payments (
     payment_id INT NOT NULL AUTO_INCREMENT,
     bill_id INT NOT NULL,
-    commodity VARCHAR(255) NOT NULL,
     amount FLOAT NOT NULL DEFAULT 0,
     dop DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (payment_id),
