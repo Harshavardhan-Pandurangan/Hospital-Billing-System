@@ -16,6 +16,7 @@ CREATE Table Patients (
     address VARCHAR(255) NOT NULL,
     phone VARCHAR(255) NOT NULL,
     gender VARCHAR(255) NOT NULL,
+    blood_group VARCHAR(20) NOT NULL DEFAULT 'NA',
     dob VARCHAR(20) NOT NULL,
     doe DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,

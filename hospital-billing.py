@@ -24,6 +24,11 @@ mydb = mysql.connector.connect(
     database="HospitalBilling"
 )
 
+global password
+password = ''
+global pass_flag
+pass_flag = 0
+
 global user_id
 user_id = 0
 
@@ -36,6 +41,23 @@ bill_id = 0
 
 # defining functions for all the functionalities
 
+# 0 - password function
+def password_func(event):
+    global password
+    if event.keysym == 'BackSpace':
+        password = password[:-1]
+        pass_flag = 0
+    else:
+        password += event.char
+        pass_flag = 1
+
+    login_passwrd_entry.delete('1.0', END)
+    # login_passwrd_entry.insert(END, "*" * len(password))
+    if pass_flag == 1:
+        login_passwrd_entry.insert(END, "*" * len(password))
+    else:
+        login_passwrd_entry.insert(END, "*" * (len(password) + 1))
+
 # 1 - login function
 def login():
     print("Login function called")
@@ -43,10 +65,10 @@ def login():
     global mydb
 
     usrname = login_usrname_entry.get('1.0', END)
-    passwrd = login_passwrd_entry.get('1.0', END)
-
     usrname = usrname[:-1]
-    passwrd = passwrd[:-1]
+
+    global password
+    passwrd = str(password)
 
     mycursor = mydb.cursor()
     mycursor.execute("SELECT * FROM Users WHERE usrname = %s AND passwrd = %s;", (usrname, passwrd))
@@ -73,6 +95,9 @@ def logout():
     MainMenuWindow.withdraw()
     LoginWindow.deiconify()
 
+    global password
+    password = ''
+
     global user_id
     user_id = 0
 
@@ -87,29 +112,39 @@ def patient_details_create():
     address = patient_details_create_address_entry.get('1.0', END)
     phone = patient_details_create_phone_entry.get('1.0', END)
     gender = patient_details_create_gender_entry.get('1.0', END)
+    blood_group = patient_details_create_blood_group_entry.get('1.0', END)
     dob = patient_details_create_dob_entry.get('1.0', END)
 
     name = name[:-1]
     address = address[:-1]
     phone = phone[:-1]
     gender = gender[:-1]
+    blood_group = blood_group[:-1]
     dob = dob[:-1]
 
     mycursor = mydb.cursor()
-    mycursor.execute('''INSERT INTO Patients(name, address, phone, gender, dob, user_id)
-        VALUES(%s, %s, %s, %s, %s, %s);''', (name, address, phone, gender, dob, user_id))
+    mycursor.execute('''INSERT INTO Patients(name, address, phone, gender, blood_group, dob, user_id)
+        VALUES(%s, %s, %s, %s, %s, %s, %s);''', (name, address, phone, gender, blood_group, dob, user_id))
     result = mycursor.fetchall()
     mydb.commit()
+
+    # retrieve the patient id of the patient created
+    mycursor = mydb.cursor()
+    mycursor.execute('''SELECT * FROM Patients WHERE name=%s and address=%s and phone=%s and gender=%s and blood_group=%s and dob=%s''', (name, address, phone, gender, blood_group, dob))
+    result = mycursor.fetchall()
+
+    patient_id_created = result[0][0]
 
     PatientDetailsCreateWindow.withdraw()
     MainMenuWindow.deiconify()
 
-    messagebox.showinfo("Success", "Patient Details Created Successfully")
+    messagebox.showinfo("Success", "Patient Details Created Successfully.\bPatient ID: " + str(patient_id_created))
 
     patient_details_create_name_entry.delete('1.0', END)
     patient_details_create_address_entry.delete('1.0', END)
     patient_details_create_phone_entry.delete('1.0', END)
     patient_details_create_gender_entry.delete('1.0', END)
+    patient_details_create_blood_group_entry.delete('1.0', END)
     patient_details_create_dob_entry.delete('1.0', END)
 
 # 4 - patient details retreive function
@@ -138,7 +173,8 @@ def patient_details_retreive():
         patient_details_update_address_entry.insert(END, result[0][2])
         patient_details_update_phone_entry.insert(END, result[0][3])
         patient_details_update_gender_entry.insert(END, result[0][4])
-        patient_details_update_dob_entry.insert(END, result[0][5])
+        patient_details_update_blood_group_entry.insert(END, result[0][5])
+        patient_details_update_dob_entry.insert(END, result[0][6])
 
 # 5 - patient details update function
 def patient_details_update():
@@ -152,17 +188,19 @@ def patient_details_update():
     address = patient_details_update_address_entry.get('1.0', END)
     phone = patient_details_update_phone_entry.get('1.0', END)
     gender = patient_details_update_gender_entry.get('1.0', END)
+    blood_group = patient_details_update_blood_group_entry.get('1.0', END)
     dob = patient_details_update_dob_entry.get('1.0', END)
 
     name = name[:-1]
     address = address[:-1]
     phone = phone[:-1]
     gender = gender[:-1]
+    blood_group = blood_group[:-1]
     dob = dob[:-1]
 
     mycursor = mydb.cursor()
-    sql = "UPDATE Patients SET name = %s, address = %s, phone = %s, gender = %s, dob = %s, user_id = %s WHERE patient_id = %s;"
-    val = (name, address, phone, gender, dob, user_id, patient_id)
+    sql = "UPDATE Patients SET name = %s, address = %s, phone = %s, gender = %s, blood_group = %s, dob = %s, user_id = %s WHERE patient_id = %s;"
+    val = (name, address, phone, gender, blood_group, dob, user_id, patient_id)
     mycursor.execute(sql, val)
     mydb.commit()
 
@@ -191,24 +229,28 @@ def patient_details_view():
         patient_details_view_address_entry.config(state=NORMAL)
         patient_details_view_phone_entry.config(state=NORMAL)
         patient_details_view_gender_entry.config(state=NORMAL)
+        patient_details_view_blood_group_entry.config(state=NORMAL)
         patient_details_view_dob_entry.config(state=NORMAL)
 
         patient_details_view_name_entry.delete('1.0', END)
         patient_details_view_address_entry.delete('1.0', END)
         patient_details_view_phone_entry.delete('1.0', END)
         patient_details_view_gender_entry.delete('1.0', END)
+        patient_details_view_blood_group_entry.delete('1.0', END)
         patient_details_view_dob_entry.delete('1.0', END)
 
         patient_details_view_name_entry.insert(END, result[0][1])
         patient_details_view_address_entry.insert(END, result[0][2])
         patient_details_view_phone_entry.insert(END, result[0][3])
         patient_details_view_gender_entry.insert(END, result[0][4])
-        patient_details_view_dob_entry.insert(END, result[0][5])
+        patient_details_view_blood_group_entry.insert(END, result[0][5])
+        patient_details_view_dob_entry.insert(END, result[0][6])
 
         patient_details_view_name_entry.config(state=DISABLED)
         patient_details_view_address_entry.config(state=DISABLED)
         patient_details_view_phone_entry.config(state=DISABLED)
         patient_details_view_gender_entry.config(state=DISABLED)
+        patient_details_view_blood_group_entry.config(state=DISABLED)
         patient_details_view_dob_entry.config(state=DISABLED)
 
 # 7 - retrieve all patients function
@@ -323,10 +365,12 @@ def bill_payment_details_view(event):
 
     result = mycursor.fetchall()
 
+    bills_update_details_id_entry.config(state=NORMAL)
     bills_details_update_problem_entry.config(state=NORMAL)
     bills_details_update_amount_entry.config(state=NORMAL)
     bills_details_update_doa_entry.config(state=NORMAL)
 
+    bills_update_details_id_entry.delete('1.0', END)
     bills_details_update_problem_entry.delete('1.0', END)
     bills_details_update_amount_entry.delete('1.0', END)
     bills_details_update_doa_entry.delete('1.0', END)
@@ -334,6 +378,7 @@ def bill_payment_details_view(event):
     bills_details_update_payments_listbox.unbind("<Double-1>")
     bills_details_update_add_new_payment_amount_entry.delete('1.0', END)
 
+    bills_update_details_id_entry.insert(END, patient_id)
     bills_details_update_problem_entry.insert(END, result[0][4])
     bills_details_update_amount_entry.insert(END, result[0][3])
     bills_details_update_doa_entry.insert(END, result[0][5])
@@ -341,16 +386,17 @@ def bill_payment_details_view(event):
     if result[0][6] != None:
         bills_details_update_problem_entry.config(state=DISABLED)
         bills_details_update_add_new_payment_amount_entry.config(state=DISABLED)
-        bills_details_update_button.config(state=DISABLED)
-        bills_details_update_add_new_payment_button.config(state=DISABLED)
-        bills_details_update_complete_bill_button.config(state=DISABLED)
+        bills_details_update_update_button.config(state=DISABLED)
+        bill_details_update_add_new_payment_button.config(state=DISABLED)
+        bills_details_update_complete_payment_button.config(state=DISABLED)
     else:
         bills_details_update_problem_entry.config(state=NORMAL)
         bills_details_update_add_new_payment_amount_entry.config(state=NORMAL)
-        bills_details_update_button.config(state=NORMAL)
-        bills_details_update_add_new_payment_button.config(state=NORMAL)
-        bills_details_update_complete_bill_button.config(state=NORMAL)
+        bills_details_update_update_button.config(state=NORMAL)
+        bill_details_update_add_new_payment_button.config(state=NORMAL)
+        bills_details_update_complete_payment_button.config(state=NORMAL)
 
+    bills_update_details_id_entry.config(state=DISABLED)
     bills_details_update_amount_entry.config(state=DISABLED)
     bills_details_update_doa_entry.config(state=DISABLED)
 
@@ -644,6 +690,7 @@ login_passwrd_label = Label(LoginWindow, text="Password", font=("Arial", 20), bg
 login_passwrd_label.place(x=50, y=230)
 
 login_passwrd_entry = Text(LoginWindow, height=1, width=20, font=("Arial", 20))
+login_passwrd_entry.bind("<Key>", password_func)
 login_passwrd_entry.place(x=200, y=230)
 
 login_button = Button(LoginWindow, text="Login", font=("Arial", 20), bg="white", command=lambda: login())
@@ -704,11 +751,17 @@ patient_details_create_gender_label.place(x=50, y=250)
 patient_details_create_gender_entry = Text(PatientDetailsCreateWindow, font=("Arial", 20), height=1, width=20)
 patient_details_create_gender_entry.place(x=200, y=250)
 
+patient_details_create_blood_group_label = Label(PatientDetailsCreateWindow, text="Blood Group", font=("Arial", 20), bg="white")
+patient_details_create_blood_group_label.place(x=50, y=300)
+
+patient_details_create_blood_group_entry = Text(PatientDetailsCreateWindow, font=("Arial", 20), height=1, width=20)
+patient_details_create_blood_group_entry.place(x=200, y=300)
+
 patient_details_create_dob_label = Label(PatientDetailsCreateWindow, text="DOB", font=("Arial", 20), bg="white")
-patient_details_create_dob_label.place(x=50, y=300)
+patient_details_create_dob_label.place(x=50, y=350)
 
 patient_details_create_dob_entry = Text(PatientDetailsCreateWindow, font=("Arial", 20), height=1, width=20)
-patient_details_create_dob_entry.place(x=200, y=300)
+patient_details_create_dob_entry.place(x=200, y=350)
 
 patient_details_create_button = Button(PatientDetailsCreateWindow, text="Create", font=("Arial", 20), bg="white", command=lambda: patient_details_create())
 patient_details_create_button.place(x=200, y=400)
@@ -737,22 +790,28 @@ patient_details_update_name_entry = Text(PatientDetailsUpdateWindow, font=("Aria
 patient_details_update_name_entry.place(x=200, y=200)
 
 patient_details_update_address_label = Label(PatientDetailsUpdateWindow, text="Address", font=("Arial", 20), bg="white")
-patient_details_update_address_label.place(x=50, y=250)
+patient_details_update_address_label.place(x=50, y=240)
 
 patient_details_update_address_entry = Text(PatientDetailsUpdateWindow, font=("Arial", 20), height=1, width=20)
-patient_details_update_address_entry.place(x=200, y=250)
+patient_details_update_address_entry.place(x=200, y=240)
 
 patient_details_update_phone_label = Label(PatientDetailsUpdateWindow, text="Phone", font=("Arial", 20), bg="white")
-patient_details_update_phone_label.place(x=50, y=300)
+patient_details_update_phone_label.place(x=50, y=280)
 
 patient_details_update_phone_entry = Text(PatientDetailsUpdateWindow, font=("Arial", 20), height=1, width=20)
-patient_details_update_phone_entry.place(x=200, y=300)
+patient_details_update_phone_entry.place(x=200, y=280)
 
 patient_details_update_gender_label = Label(PatientDetailsUpdateWindow, text="Gender", font=("Arial", 20), bg="white")
-patient_details_update_gender_label.place(x=50, y=350)
+patient_details_update_gender_label.place(x=50, y=320)
 
 patient_details_update_gender_entry = Text(PatientDetailsUpdateWindow, font=("Arial", 20), height=1, width=20)
-patient_details_update_gender_entry.place(x=200, y=350)
+patient_details_update_gender_entry.place(x=200, y=320)
+
+patient_details_update_blood_group_label = Label(PatientDetailsUpdateWindow, text="Blood Group", font=("Arial", 20), bg="white")
+patient_details_update_blood_group_label.place(x=50, y=360)
+
+patient_details_update_blood_group_entry = Text(PatientDetailsUpdateWindow, font=("Arial", 20), height=1, width=20)
+patient_details_update_blood_group_entry.place(x=200, y=360)
 
 patient_details_update_dob_label = Label(PatientDetailsUpdateWindow, text="DOB", font=("Arial", 20), bg="white")
 patient_details_update_dob_label.place(x=50, y=400)
@@ -787,22 +846,28 @@ patient_details_view_name_entry = Text(PatientDetailsViewWindow, font=("Arial", 
 patient_details_view_name_entry.place(x=200, y=200)
 
 patient_details_view_address_label = Label(PatientDetailsViewWindow, text="Address", font=("Arial", 20), bg="white")
-patient_details_view_address_label.place(x=50, y=250)
+patient_details_view_address_label.place(x=50, y=240)
 
 patient_details_view_address_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
-patient_details_view_address_entry.place(x=200, y=250)
+patient_details_view_address_entry.place(x=200, y=240)
 
 patient_details_view_phone_label = Label(PatientDetailsViewWindow, text="Phone", font=("Arial", 20), bg="white")
-patient_details_view_phone_label.place(x=50, y=300)
+patient_details_view_phone_label.place(x=50, y=280)
 
 patient_details_view_phone_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
-patient_details_view_phone_entry.place(x=200, y=300)
+patient_details_view_phone_entry.place(x=200, y=280)
 
 patient_details_view_gender_label = Label(PatientDetailsViewWindow, text="Gender", font=("Arial", 20), bg="white")
-patient_details_view_gender_label.place(x=50, y=350)
+patient_details_view_gender_label.place(x=50, y=320)
 
 patient_details_view_gender_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
-patient_details_view_gender_entry.place(x=200, y=350)
+patient_details_view_gender_entry.place(x=200, y=320)
+
+patient_details_view_blood_group_label = Label(PatientDetailsViewWindow, text="Blood Group", font=("Arial", 20), bg="white")
+patient_details_view_blood_group_label.place(x=50, y=360)
+
+patient_details_view_blood_group_entry = Text(PatientDetailsViewWindow, font=("Arial", 20), height=1, width=20, state=DISABLED)
+patient_details_view_blood_group_entry.place(x=200, y=360)
 
 patient_details_view_dob_label = Label(PatientDetailsViewWindow, text="DOB", font=("Arial", 20), bg="white")
 patient_details_view_dob_label.place(x=50, y=400)
@@ -885,17 +950,23 @@ bill_details_create_exit_button.place(x=210, y=400)
 bills_details_update_label = Label(BillsDetailsUpdateWindow, text="Update Bill Details", font=("Arial", 20), bg="white")
 bills_details_update_label.place(x=165, y=20)
 
+bills_update_details_id_label = Label(BillsDetailsUpdateWindow, text="Patient ID", font=("Arial", 13), bg="white")
+bills_update_details_id_label.place(x=50, y=65)
+
+bills_update_details_id_entry = Text(BillsDetailsUpdateWindow, font=("Arial", 13), height=1, width=20, state=DISABLED)
+bills_update_details_id_entry.place(x=200, y=65)
+
 bills_details_update_problem_label = Label(BillsDetailsUpdateWindow, text="Problem", font=("Arial", 13), bg="white")
-bills_details_update_problem_label.place(x=50, y=70)
+bills_details_update_problem_label.place(x=50, y=90)
 
 bills_details_update_problem_entry = Text(BillsDetailsUpdateWindow, font=("Arial", 13), height=1, width=20)
-bills_details_update_problem_entry.place(x=200, y=70)
+bills_details_update_problem_entry.place(x=200, y=90)
 
 bills_details_update_doa_label = Label(BillsDetailsUpdateWindow, text="DOA", font=("Arial", 13), bg="white")
-bills_details_update_doa_label.place(x=50, y=105)
+bills_details_update_doa_label.place(x=50, y=115)
 
 bills_details_update_doa_entry = Text(BillsDetailsUpdateWindow, font=("Arial", 13), height=1, width=20)
-bills_details_update_doa_entry.place(x=200, y=105)
+bills_details_update_doa_entry.place(x=200, y=115)
 
 bills_details_update_amount_label = Label(BillsDetailsUpdateWindow, text="Total Amount", font=("Arial", 13), bg="white")
 bills_details_update_amount_label.place(x=50, y=140)
